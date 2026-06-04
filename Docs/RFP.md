@@ -135,7 +135,7 @@
 
 ---
 
-## 4. AI 모델 예측 및 결과 관리 (AI Prediction Management) `[★신규 추가]`
+## 4. AI 모델 예측 및 결과 관리 (AI Prediction Management) 
 
 ### REQ-PRED-001: AI 모델 활용 폐렴 예측
 
