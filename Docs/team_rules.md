@@ -13,5 +13,41 @@
 ### 4. 적극적인 회의 참여
 팀 프로젝트 과제 수행중 필요한 회의에서 마이크는 항상키고, 눈치보지않고 적극적인 의사표명하기
 
+### 5. 프로젝트 진행방식
+  - PMS : Asana (초대완료)
+  - 담당영역
+    - 사용자관리 : 박소정
+    - 환자관리 : 박지은
+    - 진료기록관리 : 홍현정
+    - 예측모델개발 + API설계 >> 다같이 합시다.
+    - 프론트엔드 연결 >> 다같이 합시다.
+    
+  - PR 처리방법 : 수정한 당사자는 PR까지만 작성. 여튼 다른 사람이 merge 해주기. 
+    > 현재 Main branch에 대해서는 protection이 걸려 있는 상태로 혼자서는 Merge가 안되는 상태.
+  - 태스크 설정 & 마감시간 : 스탠드업에서 당일 할일 논의하고 완료는 **다음날 스탠드업 미팅 전까지**
+
 ## Git & Github Rules
-...
+- 브랜치관리전략 확정 & 팀규칙 업데이트
+  >  우리 팀 브랜치 네이밍 규칙
+
+    ```
+    feature/기능명         ex) feature/user-api
+    >> feature/user : 사용자관리
+    >> feature/patient : 환자관리
+    >> feature/record : 진료기록
+
+    hotfix/버그내용        ex) hotfix/login-error
+    docs/문서명            ex) docs/team-rules
+    ```
+
+- Commit msg 말머리 결정
+  > 커밋 메시지 규칙
+
+    ```
+    feat: 새로운 기능 추가
+    fix: 버그 수정
+    docs: 문서 작성 및 수정
+    refactor: 코드 리팩토링
+    chore: 기타 설정 변경
+    ```
+
