@@ -29,7 +29,7 @@ services:
       MYSQL_PASSWORD: ${DB_PASSWORD}
       MYSQL_PORT: ${DB_PORT}
     ports:
-      - "3307:3306"
+      - "3307:3307"
     healthcheck:
       test: ["CMD", "mysqladmin" ,"ping", "-h", "localhost"]
       timeout: 20s

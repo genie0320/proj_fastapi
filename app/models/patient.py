@@ -1,5 +1,5 @@
 import enum
-from sqlalchemy import String, SmallInteger, BigInteger, Enum
+from sqlalchemy import String, SmallInteger, BigInteger, Enum, UniqueConstraint
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from app.core.db.databases import Base
@@ -15,6 +15,10 @@ class GenderEnum(str, enum.Enum):
 
 class Patient(Base, UUIDMixin, TimestampMixin):
     __tablename__ = "patients"
+
+    __table_args__ = (
+        UniqueConstraint("uuid", name="uq_patients_uuid"),
+    )
 
     # 1. ERD 기준: id bigint PK
     # (UUIDMixin이 존재하더라도 ERD상 물리 PK인 id를 BigInteger로 명시적 선언)

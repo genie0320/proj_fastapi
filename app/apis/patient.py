@@ -1,177 +1,98 @@
-from uuid import UUID
-from typing import Any
-from fastapi import APIRouter, Depends, HTTPException, Query, status
+# app/apis/patient.py
+from typing import List, Optional
+from fastapi import APIRouter, Depends, HTTPException, status, Query, BackgroundTasks
 from sqlalchemy.ext.asyncio import AsyncSession
-from sqlalchemy import select
 
-from app.core.db.databases import async_get_db
-from app.models.patient import Patient
+from app.core.db.databases import async_get_db  # AG가 확인한 비동기 주입기 명칭 적용
 from app.schemas.patient import (
     PatientCreate,
     PatientUpdate,
-    PatientResponse,
+    PatientListResponse,
     PatientDetailResponse,
 )
-from app.apis.user import get_current_user
+from app.services.patient_service import PatientService
 
-router = APIRouter(prefix="/api/v1/patients", tags=["patients"])
+router = APIRouter(prefix="/apis/patients", tags=["Patient Management"])
 
 
-@router.post("/", status_code=status.HTTP_201_CREATED, response_model=PatientResponse)
+@router.post(
+    "", response_model=PatientDetailResponse, status_code=status.HTTP_201_CREATED
+)
 async def create_patient(
-    patient_in: PatientCreate,
-    db: AsyncSession = Depends(async_get_db),
-    current_user: dict = Depends(get_current_user)
-) -> Any:
-    """
-    Register a new patient (REQ-PTNT-001).
-    Restricted to users with 'Staff' or 'Admin' role.
-    """
-    if current_user.get("role") not in ["Staff", "Admin"]:
-        raise HTTPException(
-            status_code=status.HTTP_403_FORBIDDEN,
-            detail="Permission denied"
-        )
+    payload: PatientCreate, db: AsyncSession = Depends(async_get_db)
+):
+    return await PatientService.create_patient(db=db, payload=payload)
 
-    patient = Patient(**patient_in.model_dump())
-    db.add(patient)
-    await db.commit()
-    await db.refresh(patient)
+
+@router.get(
+    "", response_model=List[PatientListResponse], status_code=status.HTTP_200_OK
+)
+async def get_patients(
+    name: Optional[str] = Query(None),
+    gender: Optional[str] = Query(None),
+    min_age: Optional[int] = Query(None),
+    max_age: Optional[int] = Query(None),
+    db: AsyncSession = Depends(async_get_db),
+):
+    return await PatientService.get_filtered_patients(
+        db=db, name=name, gender=gender, min_age=min_age, max_age=max_age
+    )
+
+
+@router.get(
+    "/{patient_id}",
+    response_model=PatientDetailResponse,
+    status_code=status.HTTP_200_OK,
+)
+async def get_patient_detail(patient_id: int, db: AsyncSession = Depends(async_get_db)):
+    patient = await PatientService.get_patient_by_id(db=db, patient_id=patient_id)
+    if not patient:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND, detail="Patient not found"
+        )
     return patient
 
 
-@router.get("/", response_model=list[PatientResponse])
-async def list_patients(
-    name: str | None = Query(None, description="Filter by name (substring search)"),
-    gender: str | None = Query(None, description="Filter by exact gender"),
-    min_age: int | None = Query(None, description="Minimum age filter"),
-    max_age: int | None = Query(None, description="Maximum age filter"),
-    db: AsyncSession = Depends(async_get_db),
-    current_user: dict = Depends(get_current_user)
-) -> Any:
-    """
-    List all patients with optional filtering parameters (REQ-PTNT-002).
-    Requires a valid authenticated user.
-    """
-    stmt = select(Patient)
-    
-    if name:
-        stmt = stmt.where(Patient.name.contains(name))
-    if gender:
-        stmt = stmt.where(Patient.gender == gender)
-    if min_age is not None:
-        stmt = stmt.where(Patient.age >= min_age)
-    if max_age is not None:
-        stmt = stmt.where(Patient.age <= max_age)
-        
-    result = await db.execute(stmt)
-    patients = result.scalars().all()
-    return patients
-
-
-@router.get("/{patient_id}", response_model=PatientDetailResponse)
-async def get_patient(
-    patient_id: UUID,
-    db: AsyncSession = Depends(async_get_db),
-    current_user: dict = Depends(get_current_user)
-) -> Any:
-    """
-    Fetch single patient details (REQ-PTNT-003).
-    Includes mocked medical records to unblock frontend / other teams.
-    Requires a valid authenticated user.
-    """
-    stmt = select(Patient).where(Patient.uuid == patient_id)
-    result = await db.execute(stmt)
-    patient = result.scalar_one_or_none()
-    
-    if not patient:
-        raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND,
-            detail="Patient not found"
-        )
-        
-    # Inject mock medical records as required for coordination interlocking (REQ-PTNT-003 Contract)
-    mock_records = [
-        {
-            "record_id": "rec-001",
-            "diagnosis": "Essential hypertension",
-            "treatment": "Prescribed Lisinopril 10mg daily",
-            "recorded_at": "2026-05-10T09:30:00Z"
-        },
-        {
-            "record_id": "rec-002",
-            "diagnosis": "Type 2 diabetes mellitus",
-            "treatment": "Metformin 500mg twice daily, diet counseling",
-            "recorded_at": "2026-06-01T14:15:00Z"
-        }
-    ]
-    
-    # Construct response cleanly in one shot without post-validation mutation
-    patient_data = PatientResponse.model_validate(patient).model_dump()
-    return PatientDetailResponse(**patient_data, medical_records=mock_records)
-
-
-@router.patch("/{patient_id}", response_model=PatientResponse)
+@router.patch(
+    "/{patient_id}",
+    response_model=PatientDetailResponse,
+    status_code=status.HTTP_200_OK,
+)
 async def update_patient(
-    patient_id: UUID,
-    patient_in: PatientUpdate,
-    db: AsyncSession = Depends(async_get_db),
-    current_user: dict = Depends(get_current_user)
-) -> Any:
-    """
-    Update a patient's name or contact number (REQ-PTNT-004).
-    Restricted to users with 'Staff' or 'Admin' role.
-    """
-    if current_user.get("role") not in ["Staff", "Admin"]:
+    patient_id: int, payload: PatientUpdate, db: AsyncSession = Depends(async_get_db)
+):
+    if not payload.model_dump(exclude_unset=True):
         raise HTTPException(
-            status_code=status.HTTP_403_FORBIDDEN,
-            detail="Permission denied"
+            status_code=status.HTTP_400_BAD_REQUEST, detail="No fields to update"
         )
 
-    stmt = select(Patient).where(Patient.uuid == patient_id)
-    result = await db.execute(stmt)
-    patient = result.scalar_one_or_none()
-    
+    patient = await PatientService.update_patient(
+        db=db, patient_id=patient_id, payload=payload
+    )
     if not patient:
         raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND,
-            detail="Patient not found"
+            status_code=status.HTTP_404_NOT_FOUND, detail="Patient not found"
         )
-        
-    update_data = patient_in.model_dump(exclude_unset=True)
-    for key, value in update_data.items():
-        setattr(patient, key, value)
-        
-    await db.commit()
-    await db.refresh(patient)
     return patient
 
 
 @router.delete("/{patient_id}", status_code=status.HTTP_204_NO_CONTENT)
 async def delete_patient(
-    patient_id: UUID,
+    patient_id: int,
+    background_tasks: BackgroundTasks,
     db: AsyncSession = Depends(async_get_db),
-    current_user: dict = Depends(get_current_user)
-) -> None:
-    """
-    Hard delete a patient from the database (REQ-PTNT-005).
-    Restricted to users with 'Staff' or 'Admin' role.
-    """
-    if current_user.get("role") not in ["Staff", "Admin"]:
+):
+    image_paths = await PatientService.prepare_delete_patient(
+        db=db, patient_id=patient_id
+    )
+    if image_paths is None:
         raise HTTPException(
-            status_code=status.HTTP_403_FORBIDDEN,
-            detail="Permission denied"
+            status_code=status.HTTP_404_NOT_FOUND, detail="Patient not found"
         )
 
-    stmt = select(Patient).where(Patient.uuid == patient_id)
-    result = await db.execute(stmt)
-    patient = result.scalar_one_or_none()
-    
-    if not patient:
-        raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND,
-            detail="Patient not found"
+    if image_paths:
+        background_tasks.add_task(
+            PatientService.execute_cascade_file_deletion, image_paths
         )
-        
-    await db.delete(patient)
-    await db.commit()
+
+    return
