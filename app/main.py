@@ -4,7 +4,7 @@ from fastapi.staticfiles import StaticFiles
 from fastapi.responses import FileResponse
 from app.apis.practice_apis import router as practice_router
 from app.apis.patient import router as patient_router
-from app.apis.user_router import router as user_router
+from app.apis.user_router import router as user_router, admin_router
 from app.apis.record_router import router as record_router
 
 app = FastAPI(
@@ -17,6 +17,7 @@ app = FastAPI(
 app.include_router(practice_router)
 app.include_router(patient_router)
 app.include_router(user_router)
+app.include_router(admin_router)
 app.include_router(record_router)
 
 # 정적 파일 서빙 등록

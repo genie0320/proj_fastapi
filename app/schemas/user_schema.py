@@ -1,7 +1,7 @@
 import re
 from datetime import datetime
 
-from pydantic import BaseModel, ConfigDict, field_validator, model_validator, computed_field
+from pydantic import BaseModel, ConfigDict, field_validator, model_validator, computed_field, field_serializer
 
 from app.core.security import validate_password_rule
 from app.models.user import DepartmentEnum, GenderEnum, RoleEnum
@@ -144,6 +144,23 @@ class UserResponse(BaseModel):
     created_at: datetime
     updated_at: datetime
 
+    @field_serializer("role")
+    def serialize_role(self, role: RoleEnum) -> str:
+        role_map = {
+            RoleEnum.PENDING: "pending",
+            RoleEnum.STAFF: "staff",
+            RoleEnum.ADMIN: "admin"
+        }
+        return role_map.get(role, "pending")
+
+    @field_serializer("gender")
+    def serialize_gender(self, gender: GenderEnum) -> str:
+        gender_map = {
+            GenderEnum.M: "male",
+            GenderEnum.F: "female"
+        }
+        return gender_map.get(gender, "male")
+
     @computed_field
     @property
     def phone_number(self) -> str:
@@ -158,4 +175,23 @@ class TokenResponse(BaseModel):
 
 class MessageResponse(BaseModel):
     message: str
+
+
+class AdminUserRoleUpdateRequest(BaseModel):
+    user_id: int
+    new_role: RoleEnum
+
+    @model_validator(mode="before")
+    @classmethod
+    def populate_fields(cls, data: any) -> any:
+        if isinstance(data, dict):
+            role = data.get("new_role")
+            if role == "pending":
+                data["new_role"] = RoleEnum.PENDING
+            elif role == "staff":
+                data["new_role"] = RoleEnum.STAFF
+            elif role == "admin":
+                data["new_role"] = RoleEnum.ADMIN
+        return data
+
 
