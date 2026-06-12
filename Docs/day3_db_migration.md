@@ -73,10 +73,10 @@ uv run alembic upgrade head
 
 ### 3. DB 스키마 확인 (DBeaver)
 
-[users 테이블 확인]![alt text](image.png)![alt text](image-1.png)
+[users 테이블 확인]![alt text](images/image.png)![alt text](images/image-1.png)
 
 ## 2. Patient - 마이그레이션
 
 ## DB 뷰어 확인
 
-![alt text](image-7.png)
+![alt text](images/image-7.png)
