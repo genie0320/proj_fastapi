@@ -6,15 +6,14 @@ from app.core.db.databases import Base
 from app.core.db.models import UUIDMixin, TimestampMixin
 from datetime import datetime
 
-class MedicalRecord(Base):
+class MedicalRecord(Base, UUIDMixin, TimestampMixin):
     __tablename__ = "medical_records"
 
-    id = Column(BigInteger, primary_key=True, autoincrement=True)
-    patient_id = Column(BigInteger, ForeignKey("patients.id"), nullable=False)
-    chart_number = Column(String(50), nullable=False, unique=True)
-    symptoms = Column(Text, nullable=False)
-    created_at = Column(DateTime, nullable=False, default=datetime.utcnow)
-    updated_at = Column(DateTime, nullable=True, onupdate=datetime.utcnow)
+    patient_id: Mapped[uuid.UUID] = mapped_column(
+        UUID(as_uuid=True), ForeignKey("patients.uuid"), nullable=False
+    )
+    chart_number: Mapped[str] = mapped_column(String(50), nullable=False, unique=True)
+    symptoms: Mapped[str] = mapped_column(Text, nullable=False)
 
     # Relationship (patients 테이블이 있을 경우)
     # patient = relationship("Patient", back_populates="medical_records")
