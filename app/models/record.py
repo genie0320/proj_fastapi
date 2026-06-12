@@ -1,8 +1,10 @@
+from sqlalchemy.dialects.mysql import CHAR
+from sqlalchemy.orm import Mapped, mapped_column, relationship
 from sqlalchemy import Column, BigInteger, String, Text, DateTime, ForeignKey
-from sqlalchemy.orm import relationship
-from datetime import datetime
-from database import Base
 
+from app.core.db.databases import Base
+from app.core.db.models import UUIDMixin, TimestampMixin
+from datetime import datetime
 
 class MedicalRecord(Base):
     __tablename__ = "medical_records"
