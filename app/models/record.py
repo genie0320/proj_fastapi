@@ -7,7 +7,7 @@ from app.core.db.databases import Base
 from app.core.db.models import UUIDMixin, TimestampMixin
 from datetime import datetime
 
-class MedicalRecord(Base):
+class MedicalRecord(Base, UUIDMixin, TimestampMixin):
     __tablename__ = "medical_records"
 
     id = Column(BigInteger, primary_key=True, autoincrement=True)
