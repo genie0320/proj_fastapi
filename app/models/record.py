@@ -14,6 +14,7 @@ class MedicalRecord(Base):
     patient_id = Column(BigInteger, ForeignKey("patients.id"), nullable=False)
     chart_number = Column(String(50), nullable=False, unique=True)
     symptoms = Column(Text, nullable=False)
+    xray_image_path = Column(String(255), nullable=True)
     created_at = Column(DateTime, nullable=False, default=datetime.utcnow)
     updated_at = Column(DateTime, nullable=True, onupdate=datetime.utcnow)
 
