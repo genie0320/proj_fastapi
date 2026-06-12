@@ -12,7 +12,7 @@ from app.schemas.patient import (
 )
 from app.services.patient_service import PatientService
 
-router = APIRouter(prefix="/apis/patients", tags=["Patient Management"])
+router = APIRouter(prefix="/api/v1/patients", tags=["Patient Management"])
 
 
 @router.post(
@@ -96,3 +96,14 @@ async def delete_patient(
         )
 
     return
+
+
+from sqlalchemy import select
+from app.models.record import MedicalRecord
+
+@router.get("/{patient_id}/medical-records", status_code=status.HTTP_200_OK)
+async def get_patient_medical_records(patient_id: int, db: AsyncSession = Depends(async_get_db)):
+    result = await db.execute(select(MedicalRecord).where(MedicalRecord.patient_id == patient_id))
+    records = result.scalars().all()
+    return records
+
