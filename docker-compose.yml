@@ -8,11 +8,11 @@ services:
     ports:
       - "8000:8000"
     volumes:
-      - .:/workspace
+      - .:/app
       # [핵심 교정] 로컬 .venv 덮어쓰기 방지용 익명 볼륨이 누락되었는지 확인
-      - /workspace/.venv
-      - static_volume:/workspace/static
-      - media_volume:/workspace/media
+      - /app/.venv
+      - static_volume:/app/static
+      - media_volume:/app/media
     env_file:
       - .env
     environment:

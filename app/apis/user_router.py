@@ -147,3 +147,57 @@ async def delete_me(
     response.delete_cookie("refresh_token")
     return MessageResponse(message="회원 탈퇴가 완료되었습니다.")
 
+
+# --- Admin Router for Frontend Compatibility ---
+from sqlalchemy import select, or_
+from app.schemas.user_schema import AdminUserRoleUpdateRequest
+
+admin_router = APIRouter(prefix="/api/v1/admin/users", tags=["Admin Users"])
+
+@admin_router.get("", response_model=list[UserResponse], summary="전체 유저 목록 조회 (관리자 전용)")
+async def admin_list_users(
+    query: str | None = Query(default=None),
+    department: str | None = Query(default=None),
+    skip: int = Query(default=0, ge=0),
+    limit: int = Query(default=20, ge=1, le=100),
+    db: AsyncSession = Depends(async_get_db),
+    current_admin: User = Depends(get_current_admin),
+) -> list[User]:
+    stmt = select(User)
+    
+    if query:
+        stmt = stmt.where(
+            or_(
+                User.name.contains(query),
+                User.email.contains(query)
+            )
+        )
+        
+    if department:
+        from app.models.user import DepartmentEnum
+        dept_map = {
+            "developer": DepartmentEnum.DEV,
+            "medical team": DepartmentEnum.MEDICAL,
+            "researcher": DepartmentEnum.RESEARCH,
+            "개발": DepartmentEnum.DEV,
+            "의료": DepartmentEnum.MEDICAL,
+            "연구": DepartmentEnum.RESEARCH,
+        }
+        mapped_dept = dept_map.get(department.lower())
+        if mapped_dept:
+            stmt = stmt.where(User.department == mapped_dept)
+            
+    stmt = stmt.offset(skip).limit(limit).order_by(User.id)
+    result = await db.execute(stmt)
+    return list(result.scalars().all())
+
+
+@admin_router.patch("/role", response_model=UserResponse, summary="유저 권한 수정 (관리자 전용)")
+async def admin_update_user_role(
+    request: AdminUserRoleUpdateRequest,
+    service: UserService = Depends(get_user_service),
+    current_admin: User = Depends(get_current_admin),
+) -> User:
+    return await service.update_role(request.user_id, request.new_role)
+
+
