@@ -3,21 +3,13 @@ services:
     build:
       context: .
       dockerfile: app/Dockerfile
-    # [핵심 교정] 대괄호 형태로 정의된 Exec Form인지 확인 (sh -c 문자열 제거)
-    entrypoint: ["uvicorn", "app.main:app", "--host", "0.0.0.0", "--port", "8000", "--reload"]
+    entrypoint: sh -c "uv run uvicorn app.main:app --host 0.0.0.0 --port 8000 --reload --reload-exclude '.venv'"
     ports:
       - "8000:8000"
     volumes:
-      - .:/workspace
-      # [핵심 교정] 로컬 .venv 덮어쓰기 방지용 익명 볼륨이 누락되었는지 확인
-      - /workspace/.venv
-      - static_volume:/workspace/static
-      - media_volume:/workspace/media
-    env_file:
-      - .env
-    environment:
-      - DB_HOST=mysql
-      - DB_PORT=3306
+    - .:/app
+    - static_volume:/app/static
+    - media_volume:/app/media
     healthcheck:
       test: ["CMD", "python", "-c", "import urllib.request; urllib.request.urlopen('http://localhost:8000/healthcheck', timeout=5).getcode()"]
       interval: 5s
