@@ -1,20 +1,26 @@
-from sqlalchemy import String, ForeignKey
+import uuid
 from sqlalchemy.dialects.mysql import CHAR
 from sqlalchemy.orm import Mapped, mapped_column, relationship
+from sqlalchemy import Column, BigInteger, String, Text, DateTime, ForeignKey
 
 from app.core.db.databases import Base
 from app.core.db.models import UUIDMixin, TimestampMixin
-
+from datetime import datetime
 
 class MedicalRecord(Base, UUIDMixin, TimestampMixin):
     __tablename__ = "medical_records"
 
-    patient_uuid: Mapped[str] = mapped_column(
-        CHAR(36),
-        ForeignKey("patients.uuid", ondelete="CASCADE"),
-        nullable=False
-    )
-    diagnosis: Mapped[str] = mapped_column(String(255), nullable=False)
-    treatment: Mapped[str] = mapped_column(String(255), nullable=False)
+    id = Column(BigInteger, primary_key=True, autoincrement=True)
+    patient_id = Column(BigInteger, ForeignKey("patients.id"), nullable=False)
+    chart_number = Column(String(50), nullable=False, unique=True)
+    symptoms = Column(Text, nullable=False)
+    xray_image_path = Column(String(255), nullable=True)
+    created_at = Column(DateTime, nullable=False, default=datetime.utcnow)
+    updated_at = Column(DateTime, nullable=True, onupdate=datetime.utcnow)
 
+    # Relationship
     patient: Mapped["Patient"] = relationship("Patient", back_populates="medical_records")
+
+    def __repr__(self):
+        return f"<MedicalRecord(id={self.id}, chart_number='{self.chart_number}', patient_id={self.patient_id})>"
+

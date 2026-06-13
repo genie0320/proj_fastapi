@@ -1,4 +1,4 @@
-from fastapi import APIRouter, Depends, Query, Response, status
+from fastapi import APIRouter, Depends, Query, Response, Request, HTTPException, status
 from fastapi.security import HTTPAuthorizationCredentials, HTTPBearer
 from sqlalchemy.ext.asyncio import AsyncSession
 
@@ -53,11 +53,27 @@ async def signup(
 
 @router.post("/login", response_model=TokenResponse, summary="로그인")
 async def login(
-    request: UserLoginRequest,
+    request: Request,
     response: Response,
     service: UserService = Depends(get_user_service),
 ) -> TokenResponse:
-    token_response, refresh_token = await service.login(request)
+    content_type = request.headers.get("content-type", "")
+    if "application/json" in content_type:
+        try:
+            body = await request.json()
+            login_req = UserLoginRequest(**body)
+        except Exception:
+            raise HTTPException(status_code=400, detail="올바르지 않은 JSON 요청 형식입니다.")
+    else:
+        # Form 데이터로 가정 (FormData 또는 x-www-form-urlencoded)
+        form_data = await request.form()
+        email = form_data.get("username") or form_data.get("email")
+        password = form_data.get("password")
+        if not email or not password:
+            raise HTTPException(status_code=400, detail="이메일과 비밀번호를 모두 입력해주세요.")
+        login_req = UserLoginRequest(email=email, password=password)
+
+    token_response, refresh_token = await service.login(login_req)
     response.set_cookie(
         key="refresh_token",
         value=refresh_token,

@@ -141,6 +141,17 @@ const pages = {
 
         document.getElementById('record-create-form').onsubmit = (e) => this.handleRecordCreate(e, patientId);
         document.getElementById('cancel-btn').onclick = () => navigate(`/patients/${patientId}`);
+
+        // 차트 번호 자동 생성 및 채우기
+        const chartNumInput = document.getElementById('chart_number');
+        if (chartNumInput && !chartNumInput.value) {
+            const today = new Date();
+            const yy = String(today.getFullYear()).slice(-2);
+            const mm = String(today.getMonth() + 1).padStart(2, '0');
+            const dd = String(today.getDate()).padStart(2, '0');
+            const rand = Math.floor(1000 + Math.random() * 9000);
+            chartNumInput.value = `CH-${yy}${mm}${dd}-${rand}`;
+        }
     },
 
     async renderRecordDetail(recordId) {
